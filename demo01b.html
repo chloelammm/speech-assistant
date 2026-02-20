@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>FAILED DEMOOOO Stroke - Red Highlight Fixed</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding-top: 50px; }
+        .char-box {
+            display: inline-block;
+            background: white;
+            border: 4px solid #444;
+            border-radius: 12px;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        /* 米字格輔助線 */
+        .grid-lines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(#ffdfdf 1px, transparent 1px) no-repeat center/100% 1px,
+                linear-gradient(to right, #ffdfdf 1px, transparent 1px) no-repeat center/1px 100%,
+                linear-gradient(45deg, transparent 49.5%, #f2f2f2 50%, transparent 50.5%),
+                linear-gradient(-45deg, transparent 49.5%, #f2f2f2 50%, transparent 50.5%);
+            pointer-events: none;
+        }
+        .instruction { font-size: 28px; color: #333; margin-bottom: 20px; font-weight: bold; }
+        .btn-hint { margin-top: 20px; color: #666; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <div class="instruction">👇 按「踢」字：聽讀音 + 看紅色筆劃</div>
+
+    <div class="char-box" onclick="playEffect()">
+        <div class="grid-lines"></div>
+        <div id="character-target"></div>
+    </div>
+
+    <div class="btn-hint">(點擊白色格子即可觸發)</div>
+
+    <script>
+        // 關鍵設定：highlightColor 必須設定，且動畫邏輯要清晰
+        const writer = HanziWriter.create('character-target', '踢', {
+            width: 300,
+            height: 300,
+            padding: 20,
+            showOutline: true,
+            
+            // 顏色設定
+            strokeColor: '#000000',      // 已完成：黑色
+            highlightColor: '#FF0000',   // 動畫中：鮮紅色 (像 twpen 的效果)
+            outlineColor: '#EEEEEE',     // 輪廓：淡灰色
+            
+            // 動畫設定
+            strokeAnimationSpeed: 0.3,   // 慢速
+            delayBetweenStrokes: 400,    // 每筆停頓
+            strokeFadeDuration: 0        // 關鍵：這會防止顏色淡出，確保紅黑分明
+        });
+
+        function playEffect() {
+            // 1. 播放讀音 (廣東話)
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance('踢');
+            msg.lang = 'zh-HK';
+            msg.rate = 0.8;
+            window.speechSynthesis.speak(msg);
+
+            // 2. 播放變色動畫
+            // 先重置字體，再播放，確保每次點擊都有顏色變化
+            writer.cancelAnimation();
+            writer.setCharacter('踢');
+            writer.animateCharacter();
+        }
+
+        // 頁面加載完成後自動讀一次
+        window.onload = () => {
+            setTimeout(() => {
+                const welcome = new SpeechSynthesisUtterance('點擊漢字開始學習');
+                welcome.lang = 'zh-HK';
+                window.speechSynthesis.speak(welcome);
+            }, 500);
+        };
+    </script>
+</body>
+</html>

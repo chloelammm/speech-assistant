@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Speech Assistant Demo 01</title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f8ff; padding: 20px; }
+        #target-word { font-size: 48px; color: #333; }
+        #character-target { background: white; border: 2px solid #ddd; display: inline-block; margin: 20px; border-radius: 15px; }
+        .btn { padding: 15px 30px; font-size: 20px; cursor: pointer; border-radius: 50px; border: none; margin: 10px; transition: 0.3s; }
+        .speak-btn { background-color: #ffcc00; color: #554400; }
+        .draw-btn { background-color: #4caf50; color: white; }
+    </style>
+</head>
+<body>
+
+    <h1>學習詞彙：踢</h1>
+    
+    <div style="font-size: 80px;">⚽</div>
+
+    <div id="character-target"></div>
+
+    <br>
+
+    <button class="btn speak-btn" onclick="speak('踢')">🔊 聽讀音</button>
+    <button class="btn draw-btn" onclick="animateSlowWithSound()">✍️ 看筆劃</button>
+
+    <script>
+        // 初始化 Hanzi Writer
+        const writer = HanziWriter.create('character-target', '踢', {
+            width: 200,
+            height: 200,
+            padding: 5,
+            showOutline: true,
+            strokeAnimationSpeed: 0.3, 
+            delayBetweenStrokes: 300
+        });
+
+        // 功能：播放讀音 (Web Speech API)
+        function speak(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'zh-HK'; // 設定為粵語，若是普通話可改 'zh-CN'
+            msg.rate = 0.8; // 語音速度: 稍微調慢
+            window.speechSynthesis.speak(msg);
+        }
+
+        
+        // // 功能：播放筆劃動畫
+        // function animateStroke() {
+        //     writer.animateCharacter();
+        // }
+
+        // 核心功能：慢速動畫 + 每筆同步
+        function animateSlowWithSound() {
+            // 先讀一次全字
+            speak('踢');
+            
+            writer.animateCharacter({
+                onNextStrokeStart: function(strokeNum) {
+                    // 每畫一筆時觸發：
+                    // 你可以選擇播放提示音 playTick() 或讀出數字
+                    console.log("正在畫第 " + (strokeNum + 1) + " 筆");
+                    playTick(); 
+                },
+                onComplete: function() {
+                    // 全部寫完後再讀一次，加強記憶
+                    setTimeout(() => speak('踢'), 500);
+                }
+            });
+        }
+        
+        // 頁面加載後自動讀一次
+        window.onload = () => speak('踢');
+    </script>
+</body>
+</html>

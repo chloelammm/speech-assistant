@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>Speech Assistant - Demo 02 </title>
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #f0f8ff;
+            --grid-line: #ffcfcf;
+            --btn-quiz: #2196f3;
+        }
+
+        body { font-family: sans-serif; text-align: center; background: var(--bg-color); padding: 20px; }
+        
+        .main-container {
+            background: white;
+            max-width: 450px;
+            margin: auto;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        #character-target { 
+            background: white; 
+            border: 3px solid #ddd; 
+            display: inline-block; 
+            margin: 15px; 
+            border-radius: 10px;
+            position: relative;
+        }
+
+        /* 米字格輔助線 */
+        .grid-lines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            background: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px) no-repeat center/100% 1px,
+                linear-gradient(to right, var(--grid-line) 1px, transparent 1px) no-repeat center/1px 100%,
+                linear-gradient(45deg, transparent 49.5%, var(--grid-line) 50%, transparent 50.5%),
+                linear-gradient(-45deg, transparent 49.5%, var(--grid-line) 50%, transparent 50.5%);
+        }
+
+        .btn { padding: 15px 30px; font-size: 20px; cursor: pointer; border-radius: 50px; border: none; margin: 10px; transition: 0.3s; font-weight: bold; }
+        .speak-btn { background-color: #ffcc00; color: #554400; }
+        .draw-btn { background-color: #4caf50; color: white; }
+        .quiz-btn { background-color: var(--btn-quiz); color: white; width: 85%; }
+        .nav-btn { background-color: #ecf0f1; color: #7f8c8d; font-size: 14px; margin-top: 20px; }
+        .status { margin-top: 10px; color: #3498db; font-weight: bold; min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <h1 id="vocab-title">學習詞彙：踢</h1>
+    
+    <div id="vocab-pic" style="font-size: 80px;">⚽</div>
+
+    <div id="character-target">
+        <div class="grid-lines"></div>
+    </div>
+
+    <div id="status-msg" class="status"></div>
+
+    <br>
+
+    <button class="btn speak-btn" onclick="speakCurrent()">🔊 聽讀音</button>
+    <button class="btn draw-btn" onclick="animateSlowWithSound()">✍️ 看筆劃</button>
+    
+    <br>
+    <button class="btn quiz-btn" onclick="startPractice()">✏️ 跟我寫一次 (練習模式)</button>
+    <br>
+    <button class="btn nav-btn" onclick="nextWord()">下一字 ➡️</button>
+</div>
+
+<script>
+    const words = [
+        { char: '踢', pic: '⚽' },
+        { char: '跑', pic: '🏃' },
+        { char: '跳', pic: '🦘' }
+    ];
+    let wordIndex = 0;
+    let writer;
+
+    function initWriter(char) {
+        const container = document.getElementById('character-target');
+        const oldSvg = container.querySelector('svg');
+        if (oldSvg) oldSvg.remove();
+
+        writer = HanziWriter.create('character-target', char, {
+            width: 250,
+            height: 250,
+            padding: 15,
+            showOutline: true,
+            strokeColor: '#000000',      // 已完成筆劃：黑色
+            highlightColor: '#e74c3c',   // 動畫中筆劃：紅色
+            strokeAnimationSpeed: 0.3, 
+            delayBetweenStrokes: 300,
+            strokeFadeDuration: 0
+        });
+    }
+
+    // 取得當前字的讀音
+    function speakCurrent() {
+        speak(words[wordIndex].char);
+    }
+
+    function speak(text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'zh-HK';
+        msg.rate = 0.8;
+        window.speechSynthesis.speak(msg);
+    }
+
+    // --- 完全恢復為你的原始函數內容 ---
+    function animateSlowWithSound() {
+        // 先讀一次全字
+        speak(words[wordIndex].char);
+        
+        writer.animateCharacter({
+            onNextStrokeStart: function(strokeNum) {
+                // 每畫一筆時觸發：
+                console.log("正在畫第 " + (strokeNum + 1) + " 筆");
+                playTick(); 
+            },
+            onComplete: function() {
+                // 全部寫完後再讀一次，加強記憶
+                setTimeout(() => speak(words[wordIndex].char), 500);
+            }
+        });
+    }
+    // --------------------------------
+
+    function startPractice() {
+        document.getElementById('status-msg').innerText = "請在格子裡寫寫看！";
+        speak("請跟我寫一次");
+        writer.quiz({
+            onMistake: () => speak("再試一次"),
+            onCorrectStroke: () => playTick(),
+            onComplete: () => {
+                document.getElementById('status-msg').innerText = "太棒了！挑戰成功！";
+                speak("你好棒");
+            }
+        });
+    }
+
+    function nextWord() {
+        wordIndex = (wordIndex + 1) % words.length;
+        document.getElementById('vocab-title').innerText = "學習詞彙：" + words[wordIndex].char;
+        document.getElementById('vocab-pic').innerText = words[wordIndex].pic;
+        document.getElementById('status-msg').innerText = "";
+        initWriter(words[wordIndex].char);
+        speakCurrent();
+    }
+
+    function playTick() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.value = 1000; g.gain.value = 0.05;
+        osc.start(); osc.stop(ctx.currentTime + 0.05);
+    }
+
+    window.onload = () => {
+        initWriter(words[wordIndex].char);
+        speakCurrent();
+    };
+</script>
+
+</body>
+</html>
